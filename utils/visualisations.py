@@ -128,8 +128,7 @@ def plot_heatmap(
         ],
         zmid=0,
         colorbar=dict(
-            title="Z-score",
-            titlefont=dict(color=COLORS["text"]),
+            title=dict(text="Z-score", font=dict(color=COLORS["text"])),
             tickfont=dict(color=COLORS["text"]),
             len=0.8,
         ),
