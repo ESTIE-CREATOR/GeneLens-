@@ -387,7 +387,7 @@ st.dataframe(
         "log2FoldChange": "{:.3f}",
         "pvalue": "{:.2e}",
         "padj": "{:.2e}",
-    }).background_gradient(subset=["log2FoldChange"], cmap="RdBu_r"),
+    }),
     width='stretch',
     height=380
 )
