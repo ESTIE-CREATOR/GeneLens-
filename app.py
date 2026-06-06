@@ -3,6 +3,44 @@ import pandas as pd
 import numpy as np
 import io
 
+
+def parse_count_matrix(file, already_log2: bool) -> pd.DataFrame:
+    """Parse a gene expression matrix from CSV, TSV, or TXT.
+
+    Detects separator from extension, then falls back to the other common
+    delimiter if the first attempt produces only one column. Skips lines
+    starting with '#' (common in GEO supplementary text files).
+    """
+    name = file.name.lower()
+    raw = file.read()
+
+    primary_sep = "\t" if (name.endswith(".tsv") or name.endswith(".txt")) else ","
+    fallback_sep = "," if primary_sep == "\t" else "\t"
+
+    df = None
+    for sep in (primary_sep, fallback_sep):
+        try:
+            candidate = pd.read_csv(
+                io.BytesIO(raw), sep=sep, index_col=0, comment="#"
+            )
+            if candidate.shape[1] >= 1:
+                df = candidate
+                break
+        except Exception:
+            continue
+
+    if df is None:
+        raise ValueError(
+            "Could not parse the file as CSV or TSV. "
+            "Ensure the first column contains gene names and remaining columns are samples."
+        )
+
+    df.index.name = "Gene"
+    df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
+    if not already_log2:
+        df = df.astype(int)
+    return df
+
 from utils.geo_loader import EXAMPLE_DATASETS, fetch_geo_dataset
 from utils.de_analysis import run_differential_expression, get_summary_stats, get_top_degs
 from utils.visualisations import plot_volcano, plot_heatmap, plot_pca, plot_deg_bar
@@ -182,12 +220,12 @@ with st.sidebar:
 
     else:
         uploaded_file = st.file_uploader(
-            "Upload count matrix (CSV or TSV)",
-            type=["csv", "tsv"],
-            help="Rows = genes, columns = samples. First column must be gene names.",
+            "Upload count matrix (CSV, TSV, or TXT)",
+            type=["csv", "tsv", "txt"],
+            help="Rows = genes, columns = samples. First column must be gene names. Tab or comma separated.",
             label_visibility="collapsed",
         )
-        st.markdown("<small style='color:#9CA3AF'>Format: Gene | Sample1 | Sample2 …</small>", unsafe_allow_html=True)
+        st.markdown("<small style='color:#9CA3AF'>Format: Gene | Sample1 | Sample2 … (.csv / .tsv / .txt)</small>", unsafe_allow_html=True)
 
     already_log2 = st.checkbox(
         "Pre-normalized data (microarray / TPM / FPKM)",
@@ -257,12 +295,7 @@ if data_source == "🌐 GEO Database":
 elif data_source == "📁 Upload File":
     if uploaded_file is not None:
         try:
-            sep = "\t" if uploaded_file.name.endswith(".tsv") else ","
-            df = pd.read_csv(uploaded_file, sep=sep, index_col=0)
-            df.index.name = "Gene"
-            df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
-            if not already_log2:
-                df = df.astype(int)
+            df = parse_count_matrix(uploaded_file, already_log2)
             dataset_label = f"**{uploaded_file.name}** — {len(df):,} genes × {len(df.columns)} samples"
         except Exception as exc:
             st.error(f"Error loading file: {exc}")
@@ -272,7 +305,8 @@ elif data_source == "📁 Upload File":
             "**Upload a count matrix**\n\n"
             "Download a count matrix CSV from [NCBI GEO](https://www.ncbi.nlm.nih.gov/geo/) "
             "or [ArrayExpress](https://www.ebi.ac.uk/arrayexpress/) and upload it here.\n\n"
-            "**Format:** rows = genes, columns = samples. First column must be gene names."
+            "**Format:** rows = genes, columns = samples. First column must be gene names. "
+            "Accepts `.csv`, `.tsv`, and `.txt` (tab or comma separated)."
         )
         st.stop()
 
