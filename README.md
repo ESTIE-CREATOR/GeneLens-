@@ -3,7 +3,7 @@
 
 A complete bioinformatics pipeline — from raw RNA-seq count matrices to pathway-level biological interpretation.
 
-<img width="1916" height="950" alt="Image" src="https://github.com/user-attachments/assets/89376071-7888-4943-bb36-f86e9ba0c4f0" />
+<img width="1919" height="949" alt="Image" src="https://github.com/user-attachments/assets/e5665890-5e5b-4216-9320-1a332603526f" />
 ---
 
 ## 🔬 Live App
