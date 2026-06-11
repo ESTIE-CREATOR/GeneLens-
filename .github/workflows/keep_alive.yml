@@ -2,20 +2,14 @@ name: Keep GeneLens Alive
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # every 30 minutes
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake up GeneLens app
+      - name: Ping GeneLens to prevent sleep
         run: |
-          curl -s -L \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-            --max-time 60 \
-            --retry 3 \
-            --retry-delay 10 \
-            -o /dev/null \
-            -w "HTTP Status: %{http_code}\n" \
-            https://genelens.streamlit.app/
+          curl -s -o /dev/null -w "%{http_code}" https://genelens.streamlit.app/ || true
+          echo "Ping sent to genelens.streamlit.app"
